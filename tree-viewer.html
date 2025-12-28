@@ -11,6 +11,7 @@
   --muted: #666;
   --folder: #0057d8;
   --drop: #999;
+  --error: #d32f2f;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,6 +21,7 @@
     --muted: #888;
     --folder: #4ea1ff;
     --drop: #777;
+    --error: #ff5252;
   }
 }
 
@@ -83,11 +85,19 @@ li {
   color: var(--folder);
 }
 
+.directory.error > .label {
+  color: var(--error);
+}
+
 .directory > .label::before {
   content: "▾";
   display: inline-block;
   width: 1em;
   color: var(--folder);
+}
+
+.directory.error > .label::before {
+  color: var(--error);
 }
 
 .directory.collapsed > .label::before {
@@ -136,6 +146,14 @@ li:not(.directory) > .label::before {
   margin-left: 6px;
   font-size: 0.85em;
   color: var(--muted);
+}
+
+.label[data-error]::after {
+  content: attr(data-error);
+  margin-left: 6px;
+  font-size: 0.85em;
+  color: var(--error);
+  opacity: 0.7;
 }
 
 .directory.collapsed > ul {
@@ -283,15 +301,21 @@ function renderTree(data) {
 
 function buildNode(node) {
   const li = document.createElement("li");
-  if (node.name.startsWith(".")) {
+  if (node.name && node.name.startsWith(".")) {
     li.classList.add("dot");
   }
 
+  // Check for error in contents
+  const errorChild = node.contents?.find(child => child.error);
+
   const label = document.createElement("div");
   label.className = "label";
-  label.textContent = node.name;
+  label.textContent = node.name || "unknown"; // Fallback if name missing
   
-  if (node.size) {
+  if (errorChild) {
+    li.classList.add("error");
+    label.dataset.error = errorChild.error;
+  } else if (node.size) {
     label.dataset.size = node.size;
   }
 
@@ -301,7 +325,10 @@ function buildNode(node) {
   
   if (isDir) {
     li.classList.add("directory");
-    const isEmptyDir = !node.contents || node.contents.length === 0;
+    
+    // Filter out error nodes from children to be rendered
+    const validContents = node.contents?.filter(child => !child.error) || [];
+    const isEmptyDir = validContents.length === 0;
 
     if (isEmptyDir) {
       li.classList.add("empty");
@@ -309,7 +336,7 @@ function buildNode(node) {
       li.classList.add("collapsed");
       
       const ul = document.createElement("ul");
-      node.contents.forEach(child => ul.appendChild(buildNode(child)));
+      validContents.forEach(child => ul.appendChild(buildNode(child)));
       li.appendChild(ul);
 
       label.addEventListener("click", e => {

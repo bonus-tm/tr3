@@ -7,7 +7,7 @@ A simple, single-file HTML application for visualizing directory tree structures
 2. Drag and drop a JSON file containing the directory structure into the drop zone.
 
 ## Input Format
-The application expects a JSON file with a recursive structure representing the file system.
+The application expects a JSON file with a recursive structure representing the file system. It handles standard directory structures and error states.
 
 Example structure:
 ```json
@@ -24,6 +24,13 @@ Example structure:
       "name": "folder",
       "type": "directory",
       "contents": []
+    },
+    {
+      "name": "restricted_folder",
+      "type": "directory",
+      "contents": [
+        { "error": "error opening dir" }
+      ]
     }
   ]
 }
@@ -33,6 +40,7 @@ Example structure:
 - **Drag & Drop Interface**: Easy file loading.
 - **Interactive Tree**: Collapsible/expandable directory nodes.
 - **Dot Files Filtering**: Toggle visibility of hidden files (starting with dot).
+- **Error Visualization**: Distinct styling for directories with access errors.
 - **Dark Mode Support**: Automatically adapts to system color scheme.
 - **No Dependencies**: Pure HTML, CSS, and Vanilla JavaScript.
 
