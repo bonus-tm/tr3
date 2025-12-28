@@ -55,36 +55,72 @@ li {
 }
 
 .label {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   cursor: pointer;
   user-select: none;
-}
-
-.toggle {
-  width: 1em;
-  display: inline-block;
 }
 
 .directory > .label {
   color: var(--folder);
 }
 
+.directory > .label::before {
+  content: "▾";
+  display: inline-block;
+  width: 1em;
+  color: var(--folder);
+}
+
+.directory.collapsed > .label::before {
+  content: "▸";
+}
+
+.directory.empty > .label::before {
+  content: "◦";
+}
+
 li:not(.directory) > .label {
   color: var(--fg);
 }
-
-.empty {
+.directory.empty { 
   opacity: 0.45;
 }
 
-.size {
+
+/* Adjust padding-left for files to match folder icon width */
+/* Previous implementation:
+   .toggle was 1em width.
+   Files had no toggle span? Let's check.
+   "li" has padding-left? No. "ul" has padding-left: 1.2em.
+   Inside "li", we had ".label" containing ".toggle".
+   If not directory, "toggle" span was NOT added?
+   Let's check buildNode again.
+   "label.appendChild(toggle)" happens unconditionally.
+   "if (isDir) ... toggle.textContent..."
+   So files HAD a toggle span, but it was empty?
+   If toggle span was there for files, it took up space (width 1em).
+   So files were aligned with folders.
+   My new CSS for files: "padding-left: 1em" on .label replaces the empty toggle span.
+*/
+
+li:not(.directory) > .label::before {
+  /* No content, but maybe we need spacing if we don't use padding-left? */
+  /* If I use padding-left, it's part of the label box. */
+  /* Let's replicate the empty span behavior. */
+  content: "";
+  display: inline-block;
+  width: 1em;
+}
+
+.label[data-size]::after {
+  content: attr(data-size);
   margin-left: 6px;
   font-size: 0.85em;
   color: var(--muted);
 }
 
-ul.collapsed {
+.directory.collapsed > ul {
   display: none;
 }
 
@@ -216,53 +252,36 @@ function renderTree(data) {
 function buildNode(node) {
   const li = document.createElement("li");
 
-  const label = document.createElement("span");
+  const label = document.createElement("div");
   label.className = "label";
-
-  const toggle = document.createElement("span");
-  toggle.className = "toggle";
-
-  const isDir = node.type === "directory";
-  const isEmptyDir = isDir && (!node.contents || node.contents.length === 0);
-
-  if (isDir) {
-    toggle.textContent = isEmptyDir ? "◦" : "▸";
-  }
-
-  label.appendChild(toggle);
-
-  const name = document.createElement("span");
-  name.textContent = node.name;
-  label.appendChild(name);
-
+  label.textContent = node.name;
+  
   if (node.size) {
-    const size = document.createElement("span");
-    size.className = "size";
-    size.textContent = node.size;
-    label.appendChild(size);
+    label.dataset.size = node.size;
   }
 
   li.appendChild(label);
 
+  const isDir = node.type === "directory";
+  
   if (isDir) {
     li.classList.add("directory");
+    const isEmptyDir = !node.contents || node.contents.length === 0;
 
     if (isEmptyDir) {
       li.classList.add("empty");
-      return li;
+    } else {
+      li.classList.add("collapsed");
+      
+      const ul = document.createElement("ul");
+      node.contents.forEach(child => ul.appendChild(buildNode(child)));
+      li.appendChild(ul);
+
+      label.addEventListener("click", e => {
+        e.stopPropagation();
+        li.classList.toggle("collapsed");
+      });
     }
-
-    const ul = document.createElement("ul");
-    ul.classList.add("collapsed");
-
-    node.contents.forEach(child => ul.appendChild(buildNode(child)));
-    li.appendChild(ul);
-
-    label.addEventListener("click", e => {
-      e.stopPropagation();
-      ul.classList.toggle("collapsed");
-      toggle.textContent = ul.classList.contains("collapsed") ? "▸" : "▾";
-    });
   }
 
   return li;
