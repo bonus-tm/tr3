@@ -38,6 +38,18 @@ body {
   margin-bottom: 16px;
 }
 
+#command {
+  margin-bottom: 16px;
+  background: rgba(0,0,0,0.05);
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 0.85em;
+  color: var(--muted);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
 #summary {
   margin-bottom: 12px;
   font-size: 0.9em;
@@ -158,6 +170,7 @@ li:not(.directory) > .label::before {
 </head>
 <body>
 
+<div id="command"><code>cd [your-directory] && tree -Jah . -o ~/Desktop/tree.json --du --dirsfirst -I ".git|node_modules"</code></div>
 <div id="dropzone">Drop tree.json here</div>
 <div id="summary"></div>
 <div id="spinner" hidden>
