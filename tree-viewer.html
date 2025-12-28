@@ -50,10 +50,16 @@ body {
   white-space: nowrap;
 }
 
-#summary {
+#controls {
   margin-bottom: 12px;
   font-size: 0.9em;
   color: var(--muted);
+  display: flex;
+  align-items: center;
+}
+
+#tree:not(.show-dot-files) .dot {
+  display: none;
 }
 
 ul {
@@ -172,7 +178,12 @@ li:not(.directory) > .label::before {
 
 <div id="command"><code>cd [your-directory] && tree -Jah . -o ~/Desktop/tree.json --du --dirsfirst -I ".git|node_modules"</code></div>
 <div id="dropzone">Drop tree.json here</div>
-<div id="summary"></div>
+<div id="controls">
+  <span id="summary"></span>
+  <label id="dot-toggle" style="display: none; margin-left: 1em; cursor: pointer; user-select: none;">
+    <input type="checkbox" id="show-dot-files"> Show dot files
+  </label>
+</div>
 <div id="spinner" hidden>
   <div class="loader"></div>
   <div class="loading-text">Loading…</div>
@@ -185,6 +196,12 @@ const dropzone = document.getElementById("dropzone");
 const treeContainer = document.getElementById("tree");
 const summary = document.getElementById("summary");
 const spinner = document.getElementById("spinner");
+const dotToggle = document.getElementById("dot-toggle");
+const dotCheckbox = document.getElementById("show-dot-files");
+
+dotCheckbox.addEventListener("change", () => {
+  treeContainer.classList.toggle("show-dot-files", dotCheckbox.checked);
+});
 
 dropzone.addEventListener("dragover", e => e.preventDefault());
 
@@ -197,6 +214,7 @@ dropzone.addEventListener("drop", e => {
   // Clear previous state immediately
   treeContainer.innerHTML = "";
   summary.textContent = "";
+  dotToggle.style.display = "none";
 
   // Show spinner
   spinner.hidden = false;
@@ -245,6 +263,7 @@ function logOptimizationStats(data) {
 function renderTree(data) {
   treeContainer.innerHTML = "";
   summary.textContent = "";
+  dotToggle.style.display = "block";
 
   let root = Array.isArray(data) ? data[0] : data;
 
@@ -264,6 +283,9 @@ function renderTree(data) {
 
 function buildNode(node) {
   const li = document.createElement("li");
+  if (node.name.startsWith(".")) {
+    li.classList.add("dot");
+  }
 
   const label = document.createElement("div");
   label.className = "label";

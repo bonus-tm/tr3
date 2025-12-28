@@ -32,6 +32,7 @@ Example structure:
 ## Features
 - **Drag & Drop Interface**: Easy file loading.
 - **Interactive Tree**: Collapsible/expandable directory nodes.
+- **Dot Files Filtering**: Toggle visibility of hidden files (starting with dot).
 - **Dark Mode Support**: Automatically adapts to system color scheme.
 - **No Dependencies**: Pure HTML, CSS, and Vanilla JavaScript.
 
