@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Directory Tree Viewer</title>
+
+<style>
+:root {
+  --bg: #ffffff;
+  --fg: #111;
+  --muted: #666;
+  --folder: #0057d8;
+  --drop: #999;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1e1e1e;
+    --fg: #ddd;
+    --muted: #888;
+    --folder: #4ea1ff;
+    --drop: #777;
+  }
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--fg);
+  margin: 20px;
+}
+
+#dropzone {
+  border: 2px dashed var(--drop);
+  padding: 24px;
+  text-align: center;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+
+#summary {
+  margin-bottom: 12px;
+  font-size: 0.9em;
+  color: var(--muted);
+}
+
+ul {
+  list-style: none;
+  padding-left: 1.2em;
+  margin: 0;
+}
+
+li {
+  line-height: 1.4;
+}
+
+.label {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggle {
+  width: 1em;
+  display: inline-block;
+}
+
+.directory > .label {
+  color: var(--folder);
+}
+
+li:not(.directory) > .label {
+  color: var(--fg);
+}
+
+.empty {
+  opacity: 0.45;
+}
+
+.size {
+  margin-left: 6px;
+  font-size: 0.85em;
+  color: var(--muted);
+}
+
+ul.collapsed {
+  display: none;
+}
+
+#spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 40px 0;
+  color: var(--muted);
+
+  &[hidden] {
+    display: none;
+  }
+}
+
+.loader {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+  margin-top: 8px;
+  font-size: 0.9em;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+</style>
+</head>
+<body>
+
+<div id="dropzone">Drop tree.json here</div>
+<div id="summary"></div>
+<div id="spinner" hidden>
+  <div class="loader"></div>
+  <div class="loading-text">Loading…</div>
+</div>
+
+<div id="tree"></div>
+
+<script>
+const dropzone = document.getElementById("dropzone");
+const treeContainer = document.getElementById("tree");
+const summary = document.getElementById("summary");
+const spinner = document.getElementById("spinner");
+
+dropzone.addEventListener("dragover", e => e.preventDefault());
+
+dropzone.addEventListener("drop", e => {
+  e.preventDefault();
+
+  const file = e.dataTransfer.files[0];
+  if (!file) return;
+
+  // Clear previous state immediately
+  treeContainer.innerHTML = "";
+  summary.textContent = "";
+
+  // Show spinner
+  spinner.hidden = false;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    let data;
+    try {
+      data = JSON.parse(reader.result);
+    } catch (err) {
+      spinner.hidden = true;
+      summary.textContent = "Failed to parse JSON";
+      return;
+    }
+
+    // Render on next frame so spinner actually appears
+    requestAnimationFrame(() => {
+      renderTree(data);
+      spinner.hidden = true;
+      logOptimizationStats(data);
+    });
+  };
+
+  reader.readAsText(file);
+});
+
+function logOptimizationStats(data) {
+  const allTags = treeContainer.getElementsByTagName("*").length;
+  
+  let items = 0;
+  const root = Array.isArray(data) ? data[0] : data;
+  
+  function traverse(node) {
+    items++;
+    if (node.contents) {
+      node.contents.forEach(traverse);
+    }
+  }
+  
+  if (root) traverse(root);
+
+  const ratio = items > 0 ? (allTags / items).toFixed(2) : 0;
+  console.log(`DOM Stats: ${allTags} tags, ${items} items (json nodes), ${ratio} tags/item`);
+}
+
+function renderTree(data) {
+  treeContainer.innerHTML = "";
+  summary.textContent = "";
+
+  let root = Array.isArray(data) ? data[0] : data;
+
+  if (root.name === ".") {
+    if (root.size) {
+      summary.textContent = `Total size: ${root.size}`;
+    }
+    const ul = document.createElement("ul");
+    root.contents?.forEach(node => ul.appendChild(buildNode(node)));
+    treeContainer.appendChild(ul);
+  } else {
+    const ul = document.createElement("ul");
+    ul.appendChild(buildNode(root));
+    treeContainer.appendChild(ul);
+  }
+}
+
+function buildNode(node) {
+  const li = document.createElement("li");
+
+  const label = document.createElement("span");
+  label.className = "label";
+
+  const toggle = document.createElement("span");
+  toggle.className = "toggle";
+
+  const isDir = node.type === "directory";
+  const isEmptyDir = isDir && (!node.contents || node.contents.length === 0);
+
+  if (isDir) {
+    toggle.textContent = isEmptyDir ? "◦" : "▸";
+  }
+
+  label.appendChild(toggle);
+
+  const name = document.createElement("span");
+  name.textContent = node.name;
+  label.appendChild(name);
+
+  if (node.size) {
+    const size = document.createElement("span");
+    size.className = "size";
+    size.textContent = node.size;
+    label.appendChild(size);
+  }
+
+  li.appendChild(label);
+
+  if (isDir) {
+    li.classList.add("directory");
+
+    if (isEmptyDir) {
+      li.classList.add("empty");
+      return li;
+    }
+
+    const ul = document.createElement("ul");
+    ul.classList.add("collapsed");
+
+    node.contents.forEach(child => ul.appendChild(buildNode(child)));
+    li.appendChild(ul);
+
+    label.addEventListener("click", e => {
+      e.stopPropagation();
+      ul.classList.toggle("collapsed");
+      toggle.textContent = ul.classList.contains("collapsed") ? "▸" : "▾";
+    });
+  }
+
+  return li;
+}
+</script>
+
+</body>
+</html>
