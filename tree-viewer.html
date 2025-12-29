@@ -58,11 +58,12 @@ body {
   font-size: 0.9em;
   color: var(--muted);
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
 }
 
 #tree {
-  /* Hide dots if not enabled */
   &:not(.show-dot-files) .dot {
     display: none;
   }
@@ -192,10 +193,10 @@ li {
 <div id="command"><code>cd [your-directory] && tree -Jah . -o ~/Desktop/tree.json --du --dirsfirst -I ".git|node_modules|.Spotlight-V100|.Trashes|.TemporaryItems|.fseventsd|.DS_Store|$RECYCLE.BIN|.wakeup.txt"</code></div>
 <div id="dropzone">Drop tree.json here</div>
 <div id="controls">
-  <span id="summary"></span>
-  <label id="dot-toggle" style="display: none; margin-left: 1em; cursor: pointer; user-select: none;">
+  <label id="dot-toggle" style="display: none; cursor: pointer; user-select: none;">
     <input type="checkbox" id="show-dot-files"> Show dot files
   </label>
+  <span id="summary"></span>
 </div>
 <div id="spinner" hidden>
   <div class="loader"></div>
@@ -278,12 +279,23 @@ function renderTree(data) {
   summary.textContent = "";
   dotToggle.style.display = "block";
 
-  let root = Array.isArray(data) ? data[0] : data;
+  let root;
+  let report;
+
+  if (Array.isArray(data)) {
+    root = data[0];
+    report = data.find(item => item.type === "report");
+  } else {
+    root = data;
+  }
+
+  if (report) {
+    summary.textContent = `Size: ${root.size}, Directories: ${report.directories}, Files: ${report.files}`;
+  } else if (root.name === "." && root.size) {
+    summary.textContent = `Total size: ${root.size}`;
+  }
 
   if (root.name === ".") {
-    if (root.size) {
-      summary.textContent = `Total size: ${root.size}`;
-    }
     const ul = document.createElement("ul");
     root.contents?.forEach(node => ul.appendChild(buildNode(node)));
     treeContainer.appendChild(ul);
