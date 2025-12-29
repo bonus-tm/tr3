@@ -33,10 +33,12 @@ body {
   font-family: system-ui, -apple-system, sans-serif;
   background: var(--bg);
   color: var(--fg);
-  margin: 20px;
-  height: 100vh;
+  margin: 0;
+  padding: 20px;
+  min-height: 100vh;
   box-sizing: border-box;
-  overflow: hidden; /* Prevent scroll on body, tree will scroll */
+  display: flex;
+  flex-direction: column;
 }
 
 #app-title {
@@ -56,7 +58,8 @@ body {
 
 /* Screen Layouts */
 .screen {
-  height: 100%;
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
@@ -73,7 +76,6 @@ body {
 
 #tree-screen {
   display: none; /* Hidden by default */
-  overflow-y: auto;
 }
 
 /* Welcome Screen Content */
@@ -152,7 +154,7 @@ body {
 
 /* Tree Controls */
 #file-info {
-  padding-block-end: 3rem;
+  padding-inline-end: 3rem;
   margin-bottom: 1rem;
   font-size: 1.2em;
   color: var(--fg);
@@ -296,6 +298,21 @@ li {
   font-size: 0.9em;
 }
 
+footer {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 1rem;
+  
+  a {
+    color: inherit;
+    text-decoration: none;
+    
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
@@ -341,6 +358,10 @@ li {
   </div>
   <div id="tree"></div>
 </div>
+
+<footer>
+  bTM 2025 &nbsp;&nbsp;&nbsp; v1.0 &nbsp;&nbsp;&nbsp; <a href="https://github.com/bonus-tm/t3" target="_blank">GitHub</a>
+</footer>
 
 <script>
 const appTitle = document.getElementById("app-title");
