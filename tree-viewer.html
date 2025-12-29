@@ -12,6 +12,7 @@
   --folder: #0057d8;
   --drop: #999;
   --error: #d32f2f;
+  --tree-padding: 1.2rem;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,104 +61,98 @@ body {
   align-items: center;
 }
 
-#tree:not(.show-dot-files) .dot {
-  display: none;
+#tree {
+  /* Hide dots if not enabled */
+  &:not(.show-dot-files) .dot {
+    display: none;
+  }
+
+  & > ul {
+    padding-left: 0;
+  }
 }
 
 ul {
   list-style: none;
-  padding-left: 1.2em;
+  padding-left: var(--tree-padding);
   margin: 0;
 }
 
 li {
   line-height: 1.4;
+
+  &:not(.directory) > .label {
+    color: var(--fg);
+    cursor: text;
+
+    &::before {
+      content: "";
+      display: inline-block;
+      width: var(--tree-padding);
+    }
+  }
 }
 
 .label {
   display: flex;
   align-items: center;
-  cursor: pointer;
-  user-select: none;
+
+  &[data-size]::after {
+    content: attr(data-size);
+    margin-left: 6px;
+    font-size: 0.85em;
+    color: var(--muted);
+  }
+
+  &[data-error]::after {
+    content: attr(data-error);
+    margin-left: 6px;
+    font-size: 0.85em;
+    color: var(--error);
+    opacity: 0.7;
+  }
 }
 
-.directory > .label {
-  color: var(--folder);
-}
+.directory {
+  & > .label {
+    color: var(--folder);
+    cursor: pointer;
 
-.directory.error > .label {
-  color: var(--error);
-}
+    &::before {
+      content: "▾";
+      display: inline-block;
+      width: var(--tree-padding);
+      line-height: 1rem;
+      font-size: 1.75rem;
+      color: var(--folder);
+    }
+  }
 
-.directory > .label::before {
-  content: "▾";
-  display: inline-block;
-  width: 1em;
-  color: var(--folder);
-}
+  &.error > .label {
+    color: var(--error);
 
-.directory.error > .label::before {
-  color: var(--error);
-}
+    &::before {
+      color: var(--error);
+    }
+  }
 
-.directory.collapsed > .label::before {
-  content: "▸";
-}
+  &.collapsed {
+    & > .label::before {
+      content: "▸";
+    }
 
-.directory.empty > .label::before {
-  content: "◦";
-}
+    & > ul {
+      display: none;
+    }
+  }
 
-li:not(.directory) > .label {
-  color: var(--fg);
-}
-.directory.empty { 
-  opacity: 0.45;
-}
+  &.empty {
+    opacity: 0.45;
 
-
-/* Adjust padding-left for files to match folder icon width */
-/* Previous implementation:
-   .toggle was 1em width.
-   Files had no toggle span? Let's check.
-   "li" has padding-left? No. "ul" has padding-left: 1.2em.
-   Inside "li", we had ".label" containing ".toggle".
-   If not directory, "toggle" span was NOT added?
-   Let's check buildNode again.
-   "label.appendChild(toggle)" happens unconditionally.
-   "if (isDir) ... toggle.textContent..."
-   So files HAD a toggle span, but it was empty?
-   If toggle span was there for files, it took up space (width 1em).
-   So files were aligned with folders.
-   My new CSS for files: "padding-left: 1em" on .label replaces the empty toggle span.
-*/
-
-li:not(.directory) > .label::before {
-  /* No content, but maybe we need spacing if we don't use padding-left? */
-  /* If I use padding-left, it's part of the label box. */
-  /* Let's replicate the empty span behavior. */
-  content: "";
-  display: inline-block;
-  width: 1em;
-}
-
-.label[data-size]::after {
-  content: attr(data-size);
-  margin-left: 6px;
-  font-size: 0.85em;
-  color: var(--muted);
-}
-
-.label[data-error]::after {
-  content: attr(data-error);
-  margin-left: 6px;
-  font-size: 0.85em;
-  color: var(--error);
-  opacity: 0.7;
-}
-
-.directory.collapsed > ul {
-  display: none;
+    & > .label::before {
+      content: "◦";
+    }
+  }
 }
 
 #spinner {
@@ -340,6 +335,7 @@ function buildNode(node) {
       li.appendChild(ul);
 
       label.addEventListener("click", e => {
+        if (window.getSelection().toString()) return;
         e.stopPropagation();
         li.classList.toggle("collapsed");
       });
